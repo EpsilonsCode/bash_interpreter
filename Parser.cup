@@ -1,0 +1,161 @@
+import java_cup.runtime.*;
+import java.util.Map;
+import java.util.HashMap;
+
+parser code {:
+    public Map<String, String> files = new HashMap();
+        public static Integer lastCode = 0;
+    public static class Result {
+        public final String output;
+        public final boolean isError;
+
+        public Result(String output, boolean isError) {
+            this.output = output;
+            this.isError = isError;
+        }
+
+        public static Result ok(String output) {
+            return new Result(output, false);
+        }
+
+        public static Result error(String output) {
+            return new Result(output, true);
+        }
+
+        public boolean isEmpty() {
+            return this.output.isEmpty();
+        }
+    }
+:}
+
+terminal LAST_CODE;
+terminal String IDENTIFIER, COMMENT;
+
+
+terminal ECHO_KEYWORD, CAT_KEYWORD, WC_KEYWORD;
+
+terminal SEMICOLON, NEW_LINE;
+
+terminal GREATER, DOUBLE_GREATER;
+
+
+non terminal terminator;
+non terminal Result expr;
+non terminal String program;
+non terminal String argument;
+non terminal String arguments;
+terminal EQUAL;
+
+program ::=
+terminator
+{: RESULT=""; :}
+|
+expr:e
+{:
+if(!e.isEmpty())
+{
+    if(e.isError)
+        {
+        System.err.println(e.output);
+        lastCode = 1;
+        }
+    else
+        {
+        System.out.println(e.output);
+        lastCode = 0;
+        }
+}
+RESULT = "";
+:}
+|  expr:e {:
+if(!e.isEmpty())
+{
+    if(e.isError)
+        {
+        System.err.println(e.output);
+        lastCode = 1;
+        }
+    else
+        {
+        System.out.println(e.output);
+        lastCode = 0;
+        }
+}
+RESULT = "";
+  :} terminator program:p
+
+;
+
+expr ::=
+IDENTIFIER:i EQUAL argument:val
+{: RESULT=Result.ok(""); System.out.println("ASSSIG"); :}
+|
+ECHO_KEYWORD
+{: RESULT = Result.ok(" "); :}
+| ECHO_KEYWORD arguments:i
+{: RESULT = Result.ok(i); :}
+| CAT_KEYWORD argument:i
+{:
+    if (!files.containsKey(i)) {
+        RESULT = Result.error("No file: " + i);
+    } else {
+        RESULT = Result.ok(files.get(i));
+    }
+:}
+| expr:e GREATER argument:i
+{:
+    if(!e.isError)
+    {
+        files.put(i, e.output);
+        RESULT = Result.ok("");
+    }
+    else {
+     RESULT = e;
+     }
+:}
+
+| expr:e DOUBLE_GREATER argument:i
+{:
+        if(!e.isError)
+        {
+                files.compute(i, (k, v) -> v == null ? e.output : v + "\n" + e.output);
+                RESULT = Result.ok("");
+        }
+   else {
+    RESULT = e;
+    }
+:}
+| WC_KEYWORD argument:i
+{:
+    if (!files.containsKey(i)) {
+        RESULT = Result.error("No file: " + i);
+    } else {
+                String content = files.getOrDefault(i, "");       // get the file contents
+                int lines = content.isEmpty() ? 0 : content.split("\n").length;
+                RESULT = Result.ok(Integer.toString(lines));
+    }
+
+:}
+;
+
+terminator ::=
+      SEMICOLON
+    | NEW_LINE
+;
+
+argument ::=
+      IDENTIFIER:i
+      {: RESULT=i; :}
+    | COMMENT:c
+    {: RESULT=c; :}
+        | LAST_CODE
+        {: RESULT=Integer.toString(lastCode); :}
+;
+
+arguments ::=
+argument:arg
+{: RESULT=arg; :}
+|
+argument:arg arguments:args
+{: RESULT=arg+" "+args; :}
+;
