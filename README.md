@@ -20,3 +20,7 @@ Gdybym pisał projekt od nowa nieterminale byłyby podzielone na wyrażenia indy
 (np echo "test", cat x > y), oraz instrukcję. Instruckja mogłabybyć jednym wyrażeniem zakończonym średnikiem (np. echo x > y >> a;), instrukcją for
 która sama w sobie przyjmuję instrukcje albo instrukcją złożoną która zawierałaby więcej instrukcji. W takim wypadku dużo łatwiejszy byłby dalszy rozwór projektu.
 Dużo ułatwiłoby też zamiana Abstrakcyjnego Drzewa Sematycznego na formę pośrednią, aczkolwiek nie wiem czy jest to możliwe używając CUPa.
+
+
+Uwaga: z niewiadomych przyczyn plugin Intellija do CUPa pokazuje tą instrukcję jako błąd, ale wszystko działa
+non terminal List<Supplier<Resiult>> expr_list;
