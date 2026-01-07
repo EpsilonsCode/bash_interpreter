@@ -1,10 +1,15 @@
 import java_cup.runtime.*;
 import java.util.Map;
 import java.util.HashMap;
+import java.util.function.Supplier;
+import java.util.List;
+import java.util.ArrayList;
 
 parser code {:
     public Map<String, String> files = new HashMap();
-        public static Integer lastCode = 0;
+    public Map<String, String> variables = new HashMap();
+    public static Integer lastCode = 0;
+
     public static class Result {
         public final String output;
         public final boolean isError;
@@ -30,132 +35,188 @@ parser code {:
 
 terminal LAST_CODE;
 terminal String IDENTIFIER, COMMENT;
-
-
-terminal ECHO_KEYWORD, CAT_KEYWORD, WC_KEYWORD;
-
+terminal ECHO_KEYWORD, CAT_KEYWORD, WC_KEYWORD,
+        FOR_KEYWORD, IN_KEYWORD, DO_KEYWORD, DONE_KEYWORD;
 terminal SEMICOLON, NEW_LINE;
-
 terminal GREATER, DOUBLE_GREATER;
+terminal String ASSIGN_NAME;
+terminal String VARIABLE;
 
+terminal OPEN_PARENTHESIS;
+terminal CLOSE_PARENTHESIS;
+terminal AND, OR;
 
 non terminal terminator;
-non terminal Result expr;
-non terminal String program;
-non terminal String argument;
-non terminal String arguments;
-terminal EQUAL;
+non terminal Supplier<Result> expr;
+non terminal Supplier<Result> program;
+non terminal Supplier<String> argument;
+non terminal Supplier<String> arguments;
+non terminal List<Supplier<Result>> expr_list;
 
 program ::=
-terminator
-{: RESULT=""; :}
-|
-expr:e
-{:
-if(!e.isEmpty())
-{
-    if(e.isError)
-        {
-        System.err.println(e.output);
-        lastCode = 1;
-        }
-    else
-        {
-        System.out.println(e.output);
-        lastCode = 0;
-        }
-}
-RESULT = "";
-:}
-|  expr:e {:
-if(!e.isEmpty())
-{
-    if(e.isError)
-        {
-        System.err.println(e.output);
-        lastCode = 1;
-        }
-    else
-        {
-        System.out.println(e.output);
-        lastCode = 0;
-        }
-}
-RESULT = "";
-  :} terminator program:p
+      expr_list:el
+      {:
+        RESULT = () -> {
+            for (Supplier<Result> e : el) {
+                Result r = e.get();
+                if (!r.isEmpty()) {
+                    if (r.isError) {
+                        System.err.println(r.output);
+                        lastCode = 1;
+                    } else {
+                        System.out.println(r.output);
+                        lastCode = 0;
+                    }
+                }
+            }
+            return Result.ok("");
+        };
+      :}
+    |
+      {: RESULT = () -> Result.ok(""); :}
+    ;
 
-;
+expr_list ::=
+      expr:e
+      {:
+        List<Supplier<Result>> list = new ArrayList<>();
+        list.add(e);
+        RESULT = list;
+      :}
+    | expr_list:el terminator
+      {:
+        RESULT = el;
+      :}
+    | expr_list:el terminator expr:e
+      {:
+        el.add(e);
+        RESULT = el;
+      :}
+    ;
 
 expr ::=
-IDENTIFIER:i EQUAL argument:val
-{: RESULT=Result.ok(""); System.out.println("ASSSIG"); :}
-|
-ECHO_KEYWORD
-{: RESULT = Result.ok(" "); :}
-| ECHO_KEYWORD arguments:i
-{: RESULT = Result.ok(i); :}
-| CAT_KEYWORD argument:i
-{:
-    if (!files.containsKey(i)) {
-        RESULT = Result.error("No file: " + i);
-    } else {
-        RESULT = Result.ok(files.get(i));
-    }
-:}
-| expr:e GREATER argument:i
-{:
-    if(!e.isError)
-    {
-        files.put(i, e.output);
-        RESULT = Result.ok("");
-    }
-    else {
-     RESULT = e;
-     }
-:}
-
-| expr:e DOUBLE_GREATER argument:i
-{:
-        if(!e.isError)
-        {
-                files.compute(i, (k, v) -> v == null ? e.output : v + "\n" + e.output);
-                RESULT = Result.ok("");
-        }
-   else {
-    RESULT = e;
-    }
-:}
-| WC_KEYWORD argument:i
-{:
-    if (!files.containsKey(i)) {
-        RESULT = Result.error("No file: " + i);
-    } else {
-                String content = files.getOrDefault(i, "");       // get the file contents
+      FOR_KEYWORD IDENTIFIER:i IN_KEYWORD arguments:args terminator DO_KEYWORD expr_list:b terminator DONE_KEYWORD
+      {:
+        RESULT = () -> {
+            String result = "";
+            for (String val : args.get().split(" ")) {
+                variables.put(i, val);
+                for (Supplier<Result> e : b) {
+                    Result r = e.get();
+                    if (!r.isEmpty()) {
+                        if (r.isError) {
+                            return r;
+                        } else {
+                            result += r.output + "\n";
+                        }
+                    }
+                }
+            }
+            return Result.ok(result);
+        };
+      :}
+    | ASSIGN_NAME:name argument:val
+      {: RESULT = () -> {variables.put(name, val.get()); return Result.ok(""); }; :}
+    | ECHO_KEYWORD
+      {: RESULT = () -> Result.ok(" "); :}
+    | ECHO_KEYWORD arguments:i
+      {: RESULT = () -> Result.ok(i.get()); :}
+//    | expr:e1 AND expr:e2
+//      {:
+//      RESULT = () -> {
+//        if(e1.get().isError)
+//            return e1;
+//        else
+//            return Result.ok(e1.get().output)
+//      };
+//      :}
+//    | expr:e1 OR expr:e2
+//      {: RESULT = () -> Result.ok(i.get()); :}
+    | CAT_KEYWORD argument:i
+      {:
+        RESULT = () -> {
+            String argument = i.get();
+            if (!files.containsKey(argument)) {
+                return Result.error("No file: " + argument);
+            } else {
+                return Result.ok(files.get(argument));
+            }
+        };
+      :}
+    | expr:e GREATER argument:i
+      {:
+        RESULT = () -> {
+            Result result = e.get();
+            if(!result.isError) {
+                files.put(i.get(), result.output);
+                return Result.ok("");
+            } else {
+                return result;
+            }
+        };
+      :}
+    | expr:e DOUBLE_GREATER argument:i
+      {:
+        RESULT = () -> {
+            if(!e.get().isError) {
+                files.compute(i.get(), (k, v) -> v == null ? e.get().output : v + "\n" + e.get().output);
+                return Result.ok("");
+            } else {
+                return e.get();
+            }
+        };
+      :}
+    | WC_KEYWORD argument:i
+      {:
+        RESULT = () -> {
+            if (!files.containsKey(i.get())) {
+                return Result.error("No file: " + i.get());
+            } else {
+                String content = files.getOrDefault(i.get(), "");
                 int lines = content.isEmpty() ? 0 : content.split("\n").length;
-                RESULT = Result.ok(Integer.toString(lines));
-    }
-
-:}
-;
+                return Result.ok(Integer.toString(lines));
+            }
+        };
+      :}
+    ;
 
 terminator ::=
       SEMICOLON
     | NEW_LINE
-;
+    ;
 
 argument ::=
       IDENTIFIER:i
-      {: RESULT=i; :}
+      {: RESULT = () -> i; :}
     | COMMENT:c
-    {: RESULT=c; :}
-        | LAST_CODE
-        {: RESULT=Integer.toString(lastCode); :}
-;
+      {: RESULT = () -> c; :}
+    | LAST_CODE
+      {: RESULT = () -> Integer.toString(lastCode); :}
+    | VARIABLE:v
+      {: RESULT = () -> variables.getOrDefault(v, " "); :}
+//    | OPEN_PARENTHESIS expr_list:el CLOSE_PARENTHESIS
+//            {:
+//             RESULT = () -> {
+//            for (String val : args.get().split(" ")) {
+//                variables.put(i, val);
+//                for (Supplier<Result> e : el) {
+//                    Result r = e.get();
+//                    if (!r.isEmpty()) {
+//                        if (r.isError) {
+//                            return r;
+//                        } else {
+//                            result += r.output + "\n";
+//                        }
+//                    }
+//                }
+//            }
+//             };
+//             :}
+    ;
 
 arguments ::=
-argument:arg
-{: RESULT=arg; :}
-|
-argument:arg arguments:args
-{: RESULT=arg+" "+args; :}
-;
+      argument:arg
+      {: RESULT = () -> arg.get(); :}
+    | argument:arg arguments:args
+      {: RESULT = () -> arg.get() + " " + args.get(); :}
+    ;
