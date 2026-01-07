@@ -1,0 +1,65 @@
+// przykłady wzięte ze specyfikacji projektu, należy wkleić do terminala
+echo 1
+echo 1; echo 12; echo 34
+echo a ;echo ab;echo cd
+echo ef ; echo gh
+echo ab > x; echo cd>x
+echo ef >> x; cat x
+echo aaa > plik1.txt
+echo bbb >> plik2.txt
+echo ccc >> plik2.txt
+cat plik1.txt
+cat plik2.txt
+wc plik1.txt
+wc plik2.txt
+echo a>x; echo b>>x; wc x
+wc x>y; wc y
+echo x > x; cat x
+echo "a b  c"
+echo "a\\\"b\""
+echo "Ala
+ma
+
+kota" > plik; cat plik
+echo a>x;cat x;echo $?
+cat x; echo $?
+echo abc > y
+cat x >> y
+cat y
+cat x; echo a; echo $?
+echo a b c
+echo a   b    c
+echo a b c >> x
+echo d >> x
+cat x
+echo a; echo; echo b
+a=x; echo $a
+a=x; echo $a; a=y; echo $a
+echo 1; echo $a; echo $a
+echo 2
+a=x; b=$a; echo $b
+a=x; echo a > $a; cat x
+for a in 1 2; do echo $a; done
+for a in 1 2
+do echo $a
+done
+for a in 1 2
+do echo $a; done
+echo 1 > x; echo 2 > y
+for a in x y
+do echo $a; cat $a
+done
+for a in x y
+do for b in wypisz $a
+do echo $b
+done; done
+a=10
+echo $a
+for a in 1 2; do echo $a; done
+echo koniec
+echo $a
+b=111
+c=222
+for a in $b $c
+do echo $a
+done

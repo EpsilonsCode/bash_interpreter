@@ -77,7 +77,7 @@ program ::=
     ;
 
 expr_list ::=
-      expr:e
+        expr:e
       {:
         List<Supplier<Result>> list = new ArrayList<>();
         list.add(e);

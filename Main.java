@@ -37,40 +37,30 @@ class Main {
         StringBuilder input = new StringBuilder();
         String line;
 
-        System.out.println("Enter expressions or commands (Ctrl+D to finish):");
+        System.out.println("Enter expression or expressions, Ctrl+D to finish:");
 
-        // Read all lines until EOF (Ctrl+D)
         while ((line = reader.readLine()) != null) {
-            input.append(line).append("\n");  // keep newlines for CUP
+            input.append(line).append("\n");
         }
         String a = input.toString();
 
-        // Check if string is not empty
         if (!a.isEmpty()) {
-            a = a.substring(0, a.length() - 1);  // remove last newline
+            a = a.substring(0, a.length() - 1);
         }
 
-        // Feed entire input to a single parser
         parser p = new parser(new Yylex(new java.io.StringReader(a)));
 
         try {
-            // Parse the input
-            Symbol result = p.parse();  // parse returns a Symbol
+            Symbol result = p.parse();
 
-            // Get the value from the Symbol (which should be a Supplier<parser.Result>)
             if (result.value != null) {
-                @SuppressWarnings("unchecked")
                 Supplier<parser.Result> program = (Supplier<parser.Result>) result.value;
-
-                // Execute the program
                 program.get();
             }
         } catch (Exception e) {
             System.out.println("Syntax error: " + e.getMessage());
             e.printStackTrace();
         }
-
-        System.out.println("Bye!");
     }
 
 }
