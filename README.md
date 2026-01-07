@@ -14,7 +14,7 @@ Poniżej znajdują sie przemyślenia:
 
 Głównymi nieterminalami parsera są wyrażenie, lista wyrażeń, argument i argumenty (oraz terminator komendy). 
 Taka architektura pozwala na zrealizowanie powyższych funkcjonalności, ale ma problem z dodaniem ich większej ilości.
-Obecnie wyrażenie zwraca funkcję (Supplier) która wynik tekstowy, oraz czy informację czy wynik jest błędem. Argument oraz argumenty zwracają funkcję zwracającą String.
+Obecnie wyrażenie zwraca funkcję (Supplier) która zwraca wynik tekstowy, oraz czy informację czy wynik jest błędem. Argument oraz argumenty zwracają funkcję zwracającą String. Obecnie for jest wyrażeniem.
 
 Gdybym pisał projekt od nowa nieterminale byłyby podzielone na wyrażenia indykowane słowem kluczowym "echo" bądź "cat" lub znakiem ">" czy ">>" (tak jak jest teraz), przyjmujące argumenty
 (np echo "test", cat x > y), oraz instrukcję. Instruckja mogłabybyć jednym wyrażeniem zakończonym średnikiem (np. echo x > y >> a;), instrukcją for
