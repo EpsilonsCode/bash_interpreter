@@ -23,4 +23,5 @@ Dużo ułatwiłoby też zamiana Abstrakcyjnego Drzewa Sematycznego na formę po�
 
 
 Uwaga: z niewiadomych przyczyn plugin Intellija do CUPa pokazuje tą instrukcję jako błąd, ale wszystko działa
+
 non terminal List<Supplier<Resiult>> expr_list;
